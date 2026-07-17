@@ -12,10 +12,11 @@ export function SwipeDelete({ children, onDelete, label }: SwipeDeleteProps) {
   const touchStartX = useRef<number | null>(null);
 
   return (
-    <div className={`swipe-delete${open ? " is-open" : ""}`}>
-      <button className="swipe-delete-action" onClick={onDelete} aria-label={`删除${label}`}>删除</button>
+    <div className="swipe-delete">
+      <button className="swipe-delete-action" onClick={onDelete} aria-label={`删除${label}`} tabIndex={open ? 0 : -1} style={{ pointerEvents: open ? "auto" : "none" }}>删除</button>
       <div
         className="swipe-delete-content"
+        style={{ transform: open ? "translateX(-86px)" : "translateX(0)" }}
         onTouchStart={(event) => { touchStartX.current = event.touches[0]?.clientX ?? null; }}
         onTouchEnd={(event) => {
           const start = touchStartX.current;
@@ -26,6 +27,7 @@ export function SwipeDelete({ children, onDelete, label }: SwipeDeleteProps) {
           if (delta <= -38) setOpen(true);
           if (delta >= 24) setOpen(false);
         }}
+        onTouchCancel={() => { touchStartX.current = null; setOpen(false); }}
         onClickCapture={(event) => {
           if (!open) return;
           event.stopPropagation();

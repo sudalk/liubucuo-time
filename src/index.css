@@ -1486,9 +1486,8 @@ body { color: var(--v1-ink); font-family: -apple-system, BlinkMacSystemFont, "Pi
 .card-main::after { display: none; }
 .swipe-delete { background: var(--v1-surface); }
 .swipe-delete-action { display: grid; place-items: center; pointer-events: none; }
-.swipe-delete-content { transform: translateX(0); }
-.swipe-delete.is-open .swipe-delete-action { pointer-events: auto; }
-.swipe-delete.is-open .swipe-delete-content { transform: translateX(-86px); }
+.swipe-delete-content { width: 100%; transform: translateX(0); }
+.swipe-delete-action:focus-visible { pointer-events: auto; outline: 3px solid color-mix(in oklch, var(--v1-accent) 55%, transparent); outline-offset: -4px; }
 
 .record-editor-scrim {
   position: fixed; inset: 0; z-index: 180; display: grid; align-items: end;
