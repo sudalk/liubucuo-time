@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { useToastStore } from "../stores/toast";
 import { confirmAction } from "../stores/confirm";
 import { api, type PlanItem } from "../api/client";
-import { dateKey, offsetDate, pad } from "../lib/time";
+import { dateKey, pad } from "../lib/time";
 import { BubbleCloud } from "../components/BubbleCloud";
 import { AppTimePicker } from "../components/AppTimePicker";
 import { SwipeDelete } from "../components/SwipeDelete";
 import { RecordEditorSheet } from "../components/RecordEditorSheet";
+import { DateNavigator } from "../components/DateNavigator";
 
 interface HistoryEvent {
   id?: string;
@@ -65,9 +66,6 @@ export function Plan() {
     startHHMM: "09:00",
     durationHHMM: "01:00"
   });
-  const today = dateKey();
-  const yesterday = dateKey(offsetDate(-1));
-  const tomorrow = dateKey(offsetDate(1));
 
   const load = async () => {
     setLoading(true);
@@ -177,22 +175,7 @@ export function Plan() {
   return (
     <section className="sketch-screen plan-screen mobile-card-screen" aria-label="计划页">
       <div className="sketch-content">
-        <div className="page-tabs">
-          <div className="date-strip">
-            {[-2, -1, 0, 1, 2].map((offset) => {
-              const d = offsetDate(offset, new Date(date));
-              const key = dateKey(d);
-              // “昨今明”永远相对于真实今天，切换查看日期后不能把选中的日期伪装成“今”。
-              const label = key === today ? "今" : key === yesterday ? "昨" : key === tomorrow ? "明" : "";
-              return (
-                <button key={offset} className={`date-pill${key === date ? " is-active" : ""}`} onClick={() => setDate(key)}>
-                  <b>{d.getDate()}</b>
-                  <small>{label}</small>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <DateNavigator value={date} onChange={setDate} />
 
         <section className="embedded-section">
           <div className="embedded-head">

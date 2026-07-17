@@ -6,6 +6,7 @@ import { APP_TIME_ZONE, dateKey, offsetDate } from "../lib/time";
 import { AppTimePicker } from "../components/AppTimePicker";
 import { SwipeDelete } from "../components/SwipeDelete";
 import { RecordEditorSheet } from "../components/RecordEditorSheet";
+import { DateNavigator } from "../components/DateNavigator";
 
 const FLEXIBLE_EVENTS = new Set(["上厕所", "如厕"]);
 
@@ -215,7 +216,6 @@ export function Progress() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 
-  const isToday = date === dateKey();
   const compareRows = mode === "compare" ? computeCompareRows(records, plans) : [];
 
   const changeRecordTime = (id: string, part: "start" | "end", value: string) => {
@@ -361,11 +361,7 @@ export function Progress() {
   return (
     <section className="sketch-screen progress-screen mobile-card-screen" aria-label="进展页">
       <div className="sketch-content">
-        <div className="progress-date-nav compact-nav">
-          <button onClick={() => setDate(dateKey(offsetDate(-1, new Date(date))))} aria-label="前一天">‹</button>
-          <strong>{date}{isToday ? "（今日）" : ""}</strong>
-          {isToday ? <span className="date-arrow-placeholder" /> : <button onClick={() => setDate(dateKey(offsetDate(1, new Date(date))))} aria-label="后一天">›</button>}
-        </div>
+        <DateNavigator value={date} onChange={setDate} />
 
         <div className="toolbar slim-toolbar">
           <span className="subtle">按开始时间</span>

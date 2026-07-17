@@ -1515,3 +1515,28 @@ body { color: var(--v1-ink); font-family: -apple-system, BlinkMacSystemFont, "Pi
   .record-editor-scrim { align-items: center; padding: 28px; }
   .record-editor-sheet { border-radius: 24px; padding-bottom: 20px; }
 }
+
+/* Shared five-day strip and a deliberate calendar escape hatch for long jumps. */
+.date-navigator { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: stretch; margin: 0 0 22px; }
+.date-navigator .date-strip { margin: 0; }
+.date-calendar-button { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 56px; border: 1px solid var(--v1-line); border-radius: 15px; background: var(--v1-surface); color: var(--v1-muted); font: inherit; font-size: 10px; font-weight: 650; cursor: pointer; }
+.date-calendar-button svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.date-calendar-button:active { background: var(--v1-surface-soft); }
+.date-calendar-scrim { position: fixed; inset: 0; z-index: 175; display: grid; align-items: end; background: color-mix(in oklch, var(--v1-ink) 22%, transparent); }
+.date-calendar-sheet { width: min(500px, 100%); margin: 0 auto; padding: 10px 20px calc(20px + var(--safe-bottom)); border-radius: 26px 26px 0 0; background: var(--v1-surface); box-shadow: 0 -18px 46px color-mix(in oklch, var(--v1-ink) 16%, transparent); }
+.date-calendar-handle { display: block; width: 34px; height: 4px; margin: 0 auto 12px; border-radius: 999px; background: var(--v1-line); }
+.date-calendar-head { display: grid; grid-template-columns: 40px 1fr 40px; align-items: center; margin-bottom: 16px; text-align: center; }
+.date-calendar-head strong { color: var(--v1-ink); font-size: 17px; font-weight: 740; }
+.date-calendar-head button { width: 36px; height: 36px; border: 0; border-radius: 11px; background: var(--v1-surface-soft); color: var(--v1-accent-deep); font: inherit; font-size: 24px; cursor: pointer; }
+.date-calendar-weekdays, .date-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; text-align: center; }
+.date-calendar-weekdays { margin-bottom: 5px; color: var(--v1-muted); font-size: 11px; font-weight: 650; }
+.date-calendar-weekdays span, .date-calendar-grid > * { min-height: 38px; display: grid; place-items: center; }
+.date-calendar-grid button { border: 0; border-radius: 11px; background: transparent; color: var(--v1-ink); font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; }
+.date-calendar-grid button.is-today { color: var(--v1-accent-deep); }
+.date-calendar-grid button.is-selected { background: var(--v1-accent-deep); color: var(--v1-surface); }
+.date-calendar-today { width: 100%; min-height: 44px; margin-top: 15px; border: 0; border-radius: 12px; background: var(--v1-surface-soft); color: var(--v1-accent-deep); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+
+@media (min-width: 701px) {
+  .date-calendar-scrim { align-items: center; padding: 28px; }
+  .date-calendar-sheet { border-radius: 24px; padding-bottom: 20px; }
+}
