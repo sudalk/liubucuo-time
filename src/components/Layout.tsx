@@ -12,7 +12,7 @@ export function Layout({ children }: LayoutProps) {
   const navigate = useRouteStore((s) => s.navigate);
   const isHome = route === "home";
   const pageTitle: Record<Exclude<Route, "home" | "login">, string> = {
-    plan: "今日计划",
+    plan: "计划",
     progress: "进展",
     analysis: "分析",
     reflections: "一周总结",

@@ -1,0 +1,186 @@
+/*
+ * Page v1
+ * A single, native-feeling material language. The timer and event bubbles remain
+ * the product's signature moments; ordinary pages use quiet grouped content.
+ */
+
+:root {
+  --v1-paper: oklch(97.8% 0.008 325);
+  --v1-surface: oklch(99.5% 0.003 310);
+  --v1-surface-soft: oklch(95.7% 0.015 300);
+  --v1-ink: oklch(25% 0.018 275);
+  --v1-muted: oklch(56% 0.025 275);
+  --v1-line: oklch(89.5% 0.013 290);
+  --v1-accent: oklch(63% 0.135 168);
+  --v1-accent-deep: oklch(48% 0.11 170);
+  --v1-radius: 22px;
+  --v1-shadow: 0 10px 30px color-mix(in oklch, var(--v1-ink) 6%, transparent);
+}
+
+html, body, #root { background: var(--v1-paper); }
+body { color: var(--v1-ink); font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", sans-serif; }
+
+/* Stable app furniture, not a floating web panel. */
+.app-shell { background: var(--v1-paper); }
+.app-shell.has-page-bar { grid-template-rows: calc(62px + var(--safe-top)) minmax(0, 1fr); }
+.app-page-bar {
+  min-height: calc(62px + var(--safe-top));
+  padding: var(--safe-top) 20px 0;
+  border-bottom-color: var(--v1-line);
+  background: color-mix(in oklch, var(--v1-paper) 94%, var(--v1-surface));
+}
+.app-page-bar strong { color: var(--v1-ink); font-size: 17px; font-weight: 760; letter-spacing: -.025em; }
+.app-home-button { min-height: 44px; color: var(--v1-ink); font-size: 14px; }
+.app-home-button span { font-size: 30px; font-weight: 300; }
+.main-view { padding-bottom: calc(76px + var(--safe-bottom)); }
+.sketch-screen { background: var(--v1-paper); }
+.sketch-content { width: min(100%, 820px); margin-inline: auto; }
+
+.bottom-app-nav {
+  position: fixed;
+  z-index: 50;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  max-width: none;
+  min-height: calc(64px + var(--safe-bottom));
+  padding: 5px max(18px, env(safe-area-inset-left)) calc(5px + var(--safe-bottom)) max(18px, env(safe-area-inset-right));
+  border-top: 1px solid var(--v1-line);
+  border-radius: 0;
+  background: color-mix(in oklch, var(--v1-surface) 96%, var(--v1-paper));
+  box-shadow: 0 -8px 24px color-mix(in oklch, var(--v1-ink) 4%, transparent);
+}
+.bottom-app-nav button { min-height: 52px; gap: 4px; border-radius: 14px; color: var(--v1-muted); font-size: 11px; font-weight: 650; }
+.bottom-app-nav .nav-icon, .bottom-app-nav .nav-icon svg { width: 20px; height: 20px; }
+.bottom-app-nav button.is-active { color: var(--v1-accent-deep); background: color-mix(in oklch, var(--v1-accent) 12%, var(--v1-surface)); }
+
+/* The home stays distinctive, but it uses the same header, paper and action color. */
+.home-sticky-bar {
+  min-height: calc(62px + var(--safe-top));
+  padding: var(--safe-top) 20px 8px;
+  border-bottom-color: var(--v1-line);
+  background: color-mix(in oklch, var(--v1-paper) 94%, var(--v1-surface));
+}
+.home-avatar { width: 36px; height: 36px; background: color-mix(in oklch, var(--v1-accent) 18%, var(--v1-surface)); color: var(--v1-accent-deep); box-shadow: none; }
+.home-date { color: var(--v1-ink); font-size: 14px; font-weight: 700; }
+.home-my-button { min-height: 36px; padding: 0 13px; border: 1px solid var(--v1-line); border-radius: 11px; background: var(--v1-surface); color: var(--v1-ink); }
+.home-screen .sketch-content { padding-top: 18px; }
+.clock-face { box-shadow: 0 14px 34px color-mix(in oklch, var(--v1-ink) 8%, transparent); }
+.clock-core .record-button, .mini-primary { background: var(--v1-accent-deep); color: var(--v1-surface); }
+.status-section { padding: 0 2px; }
+.status-title span { color: var(--v1-ink); }
+.status-track-step { border-radius: 9px; }
+.bubble-cloud { gap: 10px; }
+.bubble-tag { box-shadow: none; }
+
+/* Page heading + date controls are intentionally light. The content does the work. */
+.mobile-card-screen .sketch-content { padding: 18px 20px 28px; }
+.page-tabs { margin-bottom: 22px; }
+.date-strip { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; overflow: visible; padding: 4px; border-radius: 16px; background: var(--v1-surface-soft); }
+.date-pill { min-width: 0; min-height: 52px; border-radius: 12px; color: var(--v1-muted); }
+.date-pill.is-active { background: var(--v1-surface); color: var(--v1-ink); box-shadow: 0 2px 8px color-mix(in oklch, var(--v1-ink) 8%, transparent); }
+.date-pill b { font-size: 16px; }
+.date-pill small { color: inherit; font-weight: 650; }
+.progress-date-nav { margin: 0 0 16px; min-height: 48px; padding: 4px; border: 1px solid var(--v1-line); border-radius: 15px; background: var(--v1-surface); box-shadow: none; }
+.progress-date-nav strong { color: var(--v1-ink); font-size: 14px; font-weight: 700; }
+.progress-date-nav button { width: 40px; height: 40px; color: var(--v1-accent-deep); background: var(--v1-surface-soft); }
+.slim-toolbar { min-height: 38px; margin: 0 0 17px; }
+.slim-toolbar .subtle { color: var(--v1-muted); font-size: 12px; }
+.slim-toolbar .btn { min-height: 36px; border-radius: 10px; box-shadow: none; }
+.slim-toolbar .btn-primary { background: var(--v1-accent-deep); }
+
+/* Shared record list grammar for Plan and Progress. */
+.embedded-section { margin: 0 0 28px; }
+.embedded-head { margin: 0 2px 10px; align-items: center; }
+.embedded-head .module-kicker { display: block; color: var(--v1-muted); font-size: 12px; font-weight: 600; }
+.embedded-head h2 { margin-top: 2px; color: var(--v1-ink); font-size: 21px; font-weight: 760; letter-spacing: -.035em; }
+.count-pill { min-width: auto; height: auto; padding: 4px 8px; border-radius: 8px; color: var(--v1-muted); background: transparent; box-shadow: none; font-size: 12px; font-weight: 650; }
+.plan-card-list { gap: 0; max-height: none; overflow: visible; padding: 0; border: 1px solid var(--v1-line); border-radius: var(--v1-radius); background: var(--v1-surface); box-shadow: var(--v1-shadow); }
+.swipe-delete { border-radius: 0; }
+.swipe-delete:first-child { border-radius: calc(var(--v1-radius) - 1px) calc(var(--v1-radius) - 1px) 0 0; }
+.swipe-delete:last-child { border-radius: 0 0 calc(var(--v1-radius) - 1px) calc(var(--v1-radius) - 1px); }
+.mobile-plan-card {
+  grid-template-columns: 68px minmax(0, 1fr);
+  gap: 13px;
+  min-height: 76px;
+  padding: 12px 16px;
+  border-radius: 0;
+  border: 0;
+  border-bottom: 1px solid var(--v1-line);
+  background: transparent;
+  box-shadow: none;
+}
+.swipe-delete:last-of-type .mobile-plan-card { border-bottom: 0; }
+.mobile-plan-card:active { background: var(--v1-surface-soft); transform: none; }
+.card-time-rail { height: auto; min-height: 48px; padding-right: 12px; border-radius: 0; border-right: 1px solid var(--v1-line); background: transparent; color: var(--v1-ink); }
+.card-time-rail strong { font-size: 16px; font-weight: 720; }
+.card-time-rail span { color: var(--v1-muted); font-size: 11px; font-weight: 560; }
+.progress-item-card .card-time-rail { background: transparent; }
+.card-main { gap: 5px; }
+.card-main b { color: var(--v1-ink); font-size: 16px; font-weight: 700; }
+.card-main small { color: var(--v1-muted); font-weight: 520; }
+.card-main::after { content: "›"; position: absolute; right: 16px; color: color-mix(in oklch, var(--v1-muted) 65%, transparent); font-size: 22px; font-weight: 350; }
+.mobile-plan-card { position: relative; }
+.card-meta { padding-right: 18px; }
+.record-status { border-radius: 6px; font-size: 11px; font-weight: 650; }
+.swipe-delete-action { width: 86px; background: oklch(59% 0.17 25); font-weight: 700; }
+.swipe-delete.is-open .swipe-delete-content { transform: translateX(-86px); }
+
+.mobile-edit-card { gap: 14px; padding: 16px; border-radius: 0; border-bottom: 1px solid var(--v1-line); background: var(--v1-surface-soft); box-shadow: none; }
+.mobile-edit-card.new-card { border-radius: calc(var(--v1-radius) - 1px); border: 0; }
+.mobile-event-input { min-height: 48px; border: 1px solid var(--v1-line); border-radius: 12px; background: var(--v1-surface); color: var(--v1-ink); box-shadow: none; font-size: 16px; font-weight: 650; }
+.mobile-event-input:focus { border-color: var(--v1-accent); box-shadow: 0 0 0 3px color-mix(in oklch, var(--v1-accent) 15%, transparent); }
+.app-time-label { color: var(--v1-muted); font-weight: 650; }
+.app-time-trigger { min-height: 48px; border-color: var(--v1-line); border-radius: 12px; background: var(--v1-surface); color: var(--v1-ink); font-size: 15px; font-weight: 700; }
+.app-time-trigger:active { background: var(--v1-surface-soft); }
+.mobile-card-actions { padding-top: 2px; }
+.mini-primary, .mini-soft { min-width: 68px; height: 38px; border-radius: 10px; font-weight: 700; }
+.mini-soft { color: var(--v1-ink); background: var(--v1-surface); }
+.inline-add-card { min-height: 58px; border: 0; border-radius: 0 0 calc(var(--v1-radius) - 1px) calc(var(--v1-radius) - 1px); background: transparent; color: var(--v1-accent-deep); box-shadow: none; font-weight: 650; }
+.inline-add-card.compact { min-height: 54px; border-top: 1px solid var(--v1-line); }
+.inline-add-card span { width: 24px; height: 24px; background: color-mix(in oklch, var(--v1-accent) 16%, var(--v1-surface)); color: var(--v1-accent-deep); font-size: 19px; }
+.embedded-empty { color: var(--v1-muted); }
+
+/* The custom time picker is a quiet, predictable bottom sheet. */
+.time-sheet-scrim { background: color-mix(in oklch, var(--v1-ink) 24%, transparent); }
+.time-sheet { padding: 16px 20px calc(20px + var(--safe-bottom)); border-radius: 24px 24px 18px 18px; background: var(--v1-surface); box-shadow: 0 -10px 32px color-mix(in oklch, var(--v1-ink) 13%, transparent); }
+.time-sheet::before { content: ""; display: block; width: 34px; height: 4px; margin: 0 auto 10px; border-radius: 999px; background: var(--v1-line); }
+.time-wheel-sheet .time-sheet-head { min-height: 46px; }
+.time-wheel-sheet .time-sheet-head button { color: var(--v1-accent-deep); font-size: 15px; font-weight: 700; }
+.time-wheel-sheet .time-sheet-head strong { color: var(--v1-ink); font-size: 16px; font-weight: 720; }
+.time-wheel-picker::before, .time-wheel-picker::after { background: var(--v1-line); }
+.time-wheel-picker .time-wheel-column button.is-selected { color: var(--v1-ink); }
+.time-sheet-day-switch { background: var(--v1-surface-soft); }
+.time-sheet-day-switch button.is-active { color: var(--v1-accent-deep); box-shadow: none; }
+
+/* Analysis and settings use surfaces only where information is actually grouped. */
+.analysis-screen .sketch-content, .settings-screen .sketch-content { padding: 20px; }
+.analysis-toolbar { margin-top: 0; }
+.analysis-overview, .reflection-panel, .summary-panel, .settings-screen .setting-section, .settings-screen .page-head { border: 1px solid var(--v1-line); border-radius: var(--v1-radius); background: var(--v1-surface); box-shadow: var(--v1-shadow); }
+.analysis-overview, .reflection-panel, .summary-panel { padding: 18px; }
+.settings-screen .page-head { padding: 20px; margin-bottom: 14px; }
+.settings-screen .page-head h1 { color: var(--v1-ink); font-size: 22px; font-weight: 750; }
+.settings-screen .setting-section { max-width: none; margin-bottom: 14px; padding: 0 18px; box-shadow: var(--v1-shadow); }
+.settings-screen .setting-section > h2 { padding-top: 17px; color: var(--v1-ink); font-size: 15px; font-weight: 700; }
+.settings-screen .setting-row { min-height: 58px; gap: 12px; color: var(--v1-ink); }
+.settings-screen .setting-row:last-child { border-bottom: 0; }
+.settings-screen .btn-primary, .settings-screen .switch.is-on { background: var(--v1-accent-deep); }
+.settings-screen .btn-soft { border: 1px solid var(--v1-line); background: var(--v1-surface-soft); color: var(--v1-ink); box-shadow: none; }
+
+@media (min-width: 701px) {
+  .app-page-bar { padding-inline: max(32px, calc((100vw - 960px) / 2)); }
+  .mobile-card-screen .sketch-content { padding: 28px 32px 42px; }
+  .plan-card-list { max-width: 720px; }
+  .embedded-head { max-width: 720px; }
+  .analysis-screen .sketch-content, .settings-screen .sketch-content { max-width: 820px; padding: 30px 32px 44px; }
+}
+
+@media (max-width: 520px) {
+  .app-page-bar { padding-inline: 16px; }
+  .mobile-card-screen .sketch-content, .analysis-screen .sketch-content, .settings-screen .sketch-content { padding-inline: 16px; }
+  .home-sticky-bar { padding-inline: 16px; }
+  .mobile-plan-card { grid-template-columns: 62px minmax(0, 1fr); padding-inline: 14px; }
+  .card-time-rail { padding-right: 8px; }
+  .date-pill { min-height: 48px; }
+}

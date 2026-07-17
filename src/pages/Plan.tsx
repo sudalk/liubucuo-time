@@ -206,8 +206,8 @@ export function Plan() {
         <section className="embedded-section">
           <div className="embedded-head">
             <div>
-              <span className="module-kicker">按开始时间排列</span>
-              <h2>计划列表</h2>
+              <span className="module-kicker">当天安排</span>
+              <h2>计划</h2>
             </div>
             <span className="count-pill">{plans.length} 条</span>
           </div>
@@ -301,8 +301,8 @@ export function Plan() {
         </section>
 
         <BubbleCloud
-          title="历史事件"
-          helperText="选择后填写计划"
+          title="常用事件"
+          helperText="点选后补全时间和时长"
           events={historyEvents.map((event) => ({ id: event.id ?? event.normalizedName, name: event.name }))}
           selectedName={null}
           onSelect={(event) => startNewFromHistoryEvent(event.name)}

@@ -190,7 +190,7 @@ export function Settings({ profileOnly = false }: { profileOnly?: boolean }) {
   const initial = (user?.email ?? "?").charAt(0).toUpperCase();
 
   return (
-    <section className="sketch-screen" aria-label="设置页">
+    <section className="sketch-screen settings-screen" aria-label="设置页">
       <div className="sketch-content">
         <div className="page-head">
           <div>

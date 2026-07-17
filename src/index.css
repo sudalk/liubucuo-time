@@ -5,6 +5,8 @@
 @import "./styles/compare-card.css";
 @import "./styles/fixes-1016.css";
 @import "./styles/fixes-1017.css";
+/* pagev1: canonical app surface, deliberately loaded after legacy prototype rules. */
+@import "./styles/app-v1.css";
 
 @tailwind base;
 @tailwind components;

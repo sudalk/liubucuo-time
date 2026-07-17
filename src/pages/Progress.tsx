@@ -378,7 +378,7 @@ export function Progress() {
         </div>
 
         <div className="toolbar slim-toolbar">
-          <span className="subtle">按开始时间排列</span>
+          <span className="subtle">按开始时间</span>
           <button className={`btn ${mode === "compare" ? "btn-primary" : "btn-soft"}`} onClick={() => { setMode((current) => current === "compare" ? "view" : "compare"); setEditingId(null); }} disabled={plans.length === 0 && records.length === 0}>
             {mode === "compare" ? "退出对比" : "对比"}
           </button>
@@ -386,7 +386,7 @@ export function Progress() {
 
         <section className="embedded-section">
           <div className="embedded-head">
-            <div><span className="module-kicker">实际时间线</span><h2>今日记录</h2></div>
+            <div><span className="module-kicker">当天实际记录</span><h2>进展</h2></div>
             <span className="count-pill">{records.length} 条</span>
           </div>
 

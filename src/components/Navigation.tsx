@@ -45,8 +45,8 @@ function NavGlyph({ kind }: { kind: NavIcon }) {
 export function BottomNav({ route, onNavigate }: BottomNavProps) {
   const items: Array<{ key: Route; label: string; icon: NavIcon }> = [
     { key: "plan", label: "计划", icon: "plan" },
-    { key: "home", label: "计时", icon: "home" },
     { key: "progress", label: "进展", icon: "progress" },
+    { key: "home", label: "计时", icon: "home" },
     { key: "analysis", label: "分析", icon: "analysis" }
   ];
   return (
