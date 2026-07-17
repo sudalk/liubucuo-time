@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">柳不匆</string>
+    <string name="title_activity_main">柳不匆</string>
+    <string name="package_name">xyz.myelephantgo.lbc</string>
+    <string name="custom_url_scheme">xyz.myelephantgo.lbc</string>
+</resources>

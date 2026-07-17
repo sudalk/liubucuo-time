@@ -1,0 +1,142 @@
+
+/* 进展对比：手机端彩色卡片 */
+.compare-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 12px;
+  align-items: stretch;
+  min-height: 104px;
+  padding: 12px;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 10px 24px color-mix(in oklch, var(--steel) 12%, transparent), inset 0 1px 0 color-mix(in oklch, white 70%, transparent);
+}
+.compare-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  border-radius: 999px;
+}
+.compare-card.is-green {
+  background: linear-gradient(135deg, color-mix(in oklch, var(--mint) 18%, var(--surface)), color-mix(in oklch, var(--mist-blue) 10%, var(--surface)));
+}
+.compare-card.is-green::before {
+  background: var(--mint);
+}
+.compare-card.is-yellow {
+  background: linear-gradient(135deg, color-mix(in oklch, var(--apricot) 26%, var(--surface)), color-mix(in oklch, var(--surface) 82%, var(--mist-blue)));
+}
+.compare-card.is-yellow::before {
+  background: var(--apricot);
+}
+.compare-card.is-red {
+  background: linear-gradient(135deg, color-mix(in oklch, var(--coral) 20%, var(--surface)), color-mix(in oklch, var(--surface) 84%, var(--violet-soft)));
+}
+.compare-card.is-red::before {
+  background: var(--coral);
+}
+
+.compare-time {
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+  background: color-mix(in oklch, white 56%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in oklch, white 75%, transparent);
+}
+.compare-time strong {
+  font-size: 19px;
+  font-weight: 900;
+  color: var(--ink);
+  letter-spacing: -0.03em;
+}
+.compare-time span {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.25;
+}
+
+.compare-body {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 8px;
+}
+.compare-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.compare-title-row b {
+  min-width: 0;
+  font-size: 17px;
+  line-height: 1.2;
+  font-weight: 900;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.compare-title-row em {
+  flex: 0 0 auto;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 850;
+  color: var(--muted);
+}
+.compare-body p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+  font-weight: 700;
+}
+.compare-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.compare-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 900;
+  box-shadow: inset 0 1px 0 color-mix(in oklch, white 60%, transparent);
+}
+.compare-chip.is-green {
+  color: oklch(37% 0.13 150);
+  background: color-mix(in oklch, var(--mint) 32%, var(--surface));
+}
+.compare-chip.is-yellow {
+  color: oklch(46% 0.12 78);
+  background: color-mix(in oklch, var(--apricot) 40%, var(--surface));
+}
+.compare-chip.is-red {
+  color: oklch(43% 0.16 27);
+  background: color-mix(in oklch, var(--coral) 30%, var(--surface));
+}
+
+@media (max-width: 430px) {
+  .compare-card {
+    grid-template-columns: 68px 1fr;
+    gap: 10px;
+    padding: 10px;
+  }
+  .compare-title-row {
+    display: grid;
+    gap: 2px;
+  }
+  .compare-title-row em {
+    font-size: 10px;
+  }
+}

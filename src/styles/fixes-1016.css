@@ -1,0 +1,63 @@
+
+/* v1.0.16 修正：状态色、秒级进展、分析页键盘遮挡 */
+.status-track-three {
+  background: color-mix(in oklch, var(--steel) 8%, var(--surface));
+  padding: 8px 8px 10px;
+  border-radius: 18px;
+}
+.status-track-step {
+  color: color-mix(in oklch, var(--ink) 86%, var(--level-color));
+  border: 2px solid color-mix(in oklch, var(--level-color) 30%, transparent);
+  background: color-mix(in oklch, var(--level-color) 16%, var(--surface));
+}
+.status-track-step:nth-child(1) {
+  --level-color: var(--coral);
+  background: linear-gradient(180deg, color-mix(in oklch, var(--coral) 28%, white), color-mix(in oklch, var(--coral) 15%, var(--surface)));
+}
+.status-track-step:nth-child(2) {
+  --level-color: var(--apricot);
+  background: linear-gradient(180deg, color-mix(in oklch, var(--apricot) 40%, white), color-mix(in oklch, var(--apricot) 18%, var(--surface)));
+}
+.status-track-step:nth-child(3) {
+  --level-color: var(--mint);
+  background: linear-gradient(180deg, color-mix(in oklch, var(--mint) 45%, white), color-mix(in oklch, var(--mint) 22%, var(--surface)));
+}
+.status-track-step.is-selected {
+  color: var(--ink);
+  border-color: var(--level-color);
+  filter: saturate(1.24) contrast(1.04);
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--level-color) 36%, transparent), 0 10px 20px color-mix(in oklch, var(--level-color) 32%, transparent);
+}
+
+.mobile-status-editor {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.status-edit-btn {
+  min-height: 42px;
+  border: 2px solid transparent;
+  border-radius: 15px;
+  font-weight: 900;
+  color: var(--ink);
+}
+.status-edit-btn.is-poor { background: color-mix(in oklch, var(--coral) 20%, var(--surface)); }
+.status-edit-btn.is-medium { background: color-mix(in oklch, var(--apricot) 32%, var(--surface)); }
+.status-edit-btn.is-good { background: color-mix(in oklch, var(--mint) 34%, var(--surface)); }
+.status-edit-btn.is-selected {
+  border-color: currentColor;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--mist-blue) 22%, transparent);
+}
+
+.plain-textarea {
+  scroll-margin-bottom: 220px;
+}
+.analysis-screen .sketch-content {
+  padding-bottom: calc(180px + var(--safe-bottom));
+}
+.analysis-actions.compact {
+  grid-template-columns: 1fr 1fr;
+}
+.platform-android .analysis-actions.compact {
+  grid-template-columns: 1fr 1fr;
+}

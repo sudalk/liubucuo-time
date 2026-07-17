@@ -1,0 +1,15 @@
+{
+  "name": "柳不匆",
+  "short_name": "柳不匆",
+  "description": "低负担地记录时间实际上花在了哪里",
+  "theme_color": "#f5f6f8",
+  "background_color": "#fbfbfc",
+  "display": "standalone",
+  "orientation": "portrait",
+  "start_url": "/",
+  "scope": "/",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

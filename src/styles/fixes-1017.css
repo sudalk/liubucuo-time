@@ -1,0 +1,13 @@
+
+/* v1.0.17：Android 输入法遮挡通用修复 */
+.platform-android input,
+.platform-android textarea,
+.platform-android select {
+  scroll-margin-bottom: 260px;
+}
+.platform-android .sketch-content {
+  padding-bottom: calc(220px + var(--safe-bottom));
+}
+.platform-android .bubble-section {
+  scroll-margin-bottom: 260px;
+}

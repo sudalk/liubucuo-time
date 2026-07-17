@@ -1,0 +1,22 @@
+# 复用 hb_agent 的第三方服务 key
+# 从 /Users/likang/geminicode/xy/hb_agent/.dev.vars 复制 RESEND_API_KEY 和 OPENAI_CHAT_API_KEY
+
+# 本项目独立密钥（每个项目独立密钥更安全）
+AUTH_SECRET=本地开发用secret请改成随机串
+
+# 复用 hb_agent 的 key
+RESEND_API_KEY=
+OPENAI_CHAT_API_KEY=
+
+# 复用 hb_agent 的 relay 配置
+OPENAI_BASE_URL=https://www.inroi.shop/v1
+DEFAULT_LLM_MODEL=gpt-5.5
+
+# 白名单（逗号分隔）
+AUTH_EMAIL_ALLOWLIST=likuai2026@proton.me
+
+# 发件人
+AUTH_EMAIL_FROM=柳不匆 <no-reply@myelephantgo.xyz>
+
+# 应用基础 URL
+APP_BASE_URL=http://localhost:5173

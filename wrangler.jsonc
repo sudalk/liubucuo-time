@@ -1,0 +1,51 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "lbc",
+  "main": "worker/index.ts",
+  "account_id": "9840cab0ec8fa56b06e765b0764ced43",
+  "compatibility_date": "2026-06-29",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "routes": [
+    {
+      "pattern": "lbc.myelephantgo.xyz",
+      "custom_domain": true
+    }
+  ],
+  "assets": {
+    "directory": "dist/client",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "lbc-db",
+      "database_id": "6b4dfd65-eca1-4c93-9310-b74f9f7e8860",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "UPLOADS",
+      "bucket_name": "lbc-uploads"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "2d592b56f4514b44b12bdb9df063b66b"
+    }
+  ],
+  "vars": {
+    "APP_BASE_URL": "https://lbc.myelephantgo.xyz",
+    "OPENAI_BASE_URL": "https://www.inroi.shop/v1",
+    "DEFAULT_LLM_MODEL": "gpt-5.5",
+    "AUTH_EMAIL_FROM": "柳不匆 <no-reply@myelephantgo.xyz>"
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}
