@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useToastStore } from "../stores/toast";
 import { confirmAction } from "../stores/confirm";
 import { api, type PlanItem } from "../api/client";
@@ -6,6 +6,7 @@ import { dateKey, offsetDate, pad } from "../lib/time";
 import { BubbleCloud } from "../components/BubbleCloud";
 import { AppTimePicker } from "../components/AppTimePicker";
 import { SwipeDelete } from "../components/SwipeDelete";
+import { RecordEditorSheet } from "../components/RecordEditorSheet";
 
 interface HistoryEvent {
   id?: string;
@@ -64,7 +65,6 @@ export function Plan() {
     startHHMM: "09:00",
     durationHHMM: "01:00"
   });
-  const newCardRef = useRef<HTMLElement>(null);
   const today = dateKey();
   const yesterday = dateKey(offsetDate(-1));
   const tomorrow = dateKey(offsetDate(1));
@@ -92,18 +92,8 @@ export function Plan() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 
-  useEffect(() => {
-    if (!addingNew) return;
-    const reveal = () => newCardRef.current?.scrollIntoView({ behavior: "auto", block: "nearest" });
-    const timer = window.setTimeout(reveal, 80);
-    window.visualViewport?.addEventListener("resize", reveal);
-    return () => {
-      window.clearTimeout(timer);
-      window.visualViewport?.removeEventListener("resize", reveal);
-    };
-  }, [addingNew]);
-
   const startEdit = (plan: PlanItem) => {
+    setAddingNew(false);
     setEditingId(plan.id);
     setDraft({ ...plan });
   };
@@ -151,6 +141,7 @@ export function Plan() {
 
   const startNewFromHistoryEvent = (eventName: string) => {
     // 和点击加号完全相同，只是预先填入事件名，仍需由用户确认时间与预计耗时。
+    setEditingId(null);
     setNewDraft((current) => ({ ...current, eventName }));
     setAddingNew(true);
   };
@@ -221,41 +212,7 @@ export function Plan() {
               </button>
             )}
 
-            {plans.map((plan) => {
-              const isEditing = editingId === plan.id;
-              if (isEditing) {
-                return (
-                  <article key={plan.id} className="mobile-edit-card">
-                    <input
-                      className="mobile-event-input"
-                      value={draft.eventName ?? ""}
-                      onChange={(e) => setDraft({ ...draft, eventName: e.target.value })}
-                      placeholder="事件名"
-                      autoFocus
-                    />
-                    <div className="mobile-time-grid">
-                      <AppTimePicker
-                        label="耗时"
-                        value={minutesToHHMM(draft.estimatedMinutes)}
-                        hourMin={0}
-                        hourMax={12}
-                        onChange={(value) => setDraft({ ...draft, estimatedMinutes: hhmmToMinutes(value) })}
-                      />
-                      <AppTimePicker
-                        label="开始"
-                        value={localToHHMM(draft.plannedStartLocal)}
-                        onChange={(value) => setDraft({ ...draft, plannedStartLocal: hhmmToLocal(value, date) })}
-                      />
-                    </div>
-                    <div className="mobile-card-actions">
-                      <button className="mini-soft" onClick={() => setEditingId(null)}>取消</button>
-                      <button className="mini-primary" onClick={saveDraft}>保存</button>
-                    </div>
-                  </article>
-                );
-              }
-
-              return (
+            {plans.map((plan) => (
                 <SwipeDelete key={plan.id} label="计划" onDelete={() => void deletePlan(plan.id)}>
                   <article className="mobile-plan-card" onClick={() => startEdit(plan)}>
                     <div className="card-time-rail">
@@ -268,29 +225,7 @@ export function Plan() {
                     </div>
                   </article>
                 </SwipeDelete>
-              );
-            })}
-
-            {addingNew && (
-              <article ref={newCardRef} className="mobile-edit-card new-card">
-                <input
-                  className="mobile-event-input"
-                  value={newDraft.eventName}
-                  onChange={(e) => setNewDraft({ ...newDraft, eventName: e.target.value })}
-                  onKeyDown={(e) => { if (e.key === "Enter") saveNew(); if (e.key === "Escape") cancelNew(); }}
-                  placeholder="事件名"
-                  autoFocus
-                />
-                <div className="mobile-time-grid">
-                  <AppTimePicker label="耗时" value={newDraft.durationHHMM} hourMin={0} hourMax={12} onChange={(value) => setNewDraft({ ...newDraft, durationHHMM: value })} />
-                  <AppTimePicker label="开始" value={newDraft.startHHMM} onChange={(value) => setNewDraft({ ...newDraft, startHHMM: value })} />
-                </div>
-                <div className="mobile-card-actions">
-                  <button className="mini-soft" onClick={cancelNew}>取消</button>
-                  <button className="mini-primary" onClick={saveNew}>保存</button>
-                </div>
-              </article>
-            )}
+            ))}
 
             {!addingNew && plans.length > 0 && (
               <button className="inline-add-card compact" onClick={() => setAddingNew(true)}>
@@ -308,6 +243,24 @@ export function Plan() {
           onSelect={(event) => startNewFromHistoryEvent(event.name)}
         />
       </div>
+      {editingId && (
+        <RecordEditorSheet title="编辑计划" onCancel={() => { setEditingId(null); setDraft({}); }} onSave={saveDraft}>
+          <input className="mobile-event-input" value={draft.eventName ?? ""} onChange={(e) => setDraft({ ...draft, eventName: e.target.value })} placeholder="事件名" autoFocus />
+          <div className="mobile-time-grid">
+            <AppTimePicker label="预计耗时" value={minutesToHHMM(draft.estimatedMinutes)} hourMin={0} hourMax={12} onChange={(value) => setDraft({ ...draft, estimatedMinutes: hhmmToMinutes(value) })} />
+            <AppTimePicker label="开始时间" value={localToHHMM(draft.plannedStartLocal)} onChange={(value) => setDraft({ ...draft, plannedStartLocal: hhmmToLocal(value, date) })} />
+          </div>
+        </RecordEditorSheet>
+      )}
+      {addingNew && (
+        <RecordEditorSheet title="添加计划" onCancel={cancelNew} onSave={() => void saveNew()} saveLabel="添加计划">
+          <input className="mobile-event-input" value={newDraft.eventName} onChange={(e) => setNewDraft({ ...newDraft, eventName: e.target.value })} onKeyDown={(e) => { if (e.key === "Enter") void saveNew(); }} placeholder="事件名" autoFocus />
+          <div className="mobile-time-grid">
+            <AppTimePicker label="预计耗时" value={newDraft.durationHHMM} hourMin={0} hourMax={12} onChange={(value) => setNewDraft({ ...newDraft, durationHHMM: value })} />
+            <AppTimePicker label="开始时间" value={newDraft.startHHMM} onChange={(value) => setNewDraft({ ...newDraft, startHHMM: value })} />
+          </div>
+        </RecordEditorSheet>
+      )}
     </section>
   );
 }

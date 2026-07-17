@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useToastStore } from "../stores/toast";
 import { confirmAction } from "../stores/confirm";
 import { api, type PlanItem, type TimeRecord } from "../api/client";
 import { APP_TIME_ZONE, dateKey, offsetDate } from "../lib/time";
 import { AppTimePicker } from "../components/AppTimePicker";
 import { SwipeDelete } from "../components/SwipeDelete";
+import { RecordEditorSheet } from "../components/RecordEditorSheet";
 
 const FLEXIBLE_EVENTS = new Set(["上厕所", "如厕"]);
 
@@ -189,7 +190,6 @@ export function Progress() {
   const [drafts, setDrafts] = useState<Record<string, RecordDraft>>({});
   const [addingNew, setAddingNew] = useState(false);
   const [newDraft, setNewDraft] = useState<{ eventName: string; startHHMM: string; endHHMM: string; endNextDay: boolean }>({ eventName: "", startHHMM: "09:00", endHHMM: "10:00", endNextDay: false });
-  const newCardRef = useRef<HTMLElement>(null);
 
   const load = async () => {
     setLoading(true);
@@ -214,17 +214,6 @@ export function Progress() {
     setAddingNew(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
-
-  useEffect(() => {
-    if (!addingNew) return;
-    const reveal = () => newCardRef.current?.scrollIntoView({ behavior: "auto", block: "nearest" });
-    const timer = window.setTimeout(reveal, 80);
-    window.visualViewport?.addEventListener("resize", reveal);
-    return () => {
-      window.clearTimeout(timer);
-      window.visualViewport?.removeEventListener("resize", reveal);
-    };
-  }, [addingNew]);
 
   const isToday = date === dateKey();
   const compareRows = mode === "compare" ? computeCompareRows(records, plans) : [];
@@ -329,6 +318,7 @@ export function Progress() {
   };
 
   const startEdit = (record: TimeRecord) => {
+    setAddingNew(false);
     setDrafts((previous) => ({
       ...previous,
       [record.id]: {
@@ -397,35 +387,7 @@ export function Progress() {
             )}
 
             {mode === "view" && records.map((record) => {
-              const isEditing = editingId === record.id;
-              const draft = drafts[record.id] ?? record;
               const status = statusDisplay(record.statusProgress);
-              if (isEditing) {
-                return (
-                  <article key={record.id} className="mobile-edit-card">
-                    <input className="mobile-event-input" value={draft.eventName ?? ""} onChange={(e) => setDrafts((previous) => ({ ...previous, [record.id]: { ...previous[record.id], eventName: e.target.value } }))} placeholder="事件名" />
-                    <div className="mobile-time-grid">
-                      <AppTimePicker label="开始" value={isoToHHMM(draft.startUtc)} onChange={(value) => changeRecordTime(record.id, "start", value)} />
-                      <AppTimePicker label="结束" value={isoToHHMM(draft.endUtc)} dayOffset={draft.endNextDay ? 1 : 0} onDayOffsetChange={(offset) => setRecordEndDay(record.id, offset === 1)} onChange={(value) => changeRecordTime(record.id, "end", value)} />
-                    </div>
-                    <div className="mobile-status-editor" role="group" aria-label="状态">
-                      {[{ label: "差", value: 30, tone: "poor" }, { label: "中", value: 60, tone: "medium" }, { label: "好", value: 90, tone: "good" }].map((item) => (
-                        <button
-                          key={item.label}
-                          className={`status-edit-btn is-${item.tone}${statusDisplay(draft.statusProgress).label === item.label ? " is-selected" : ""}`}
-                          onClick={() => setDrafts((previous) => ({ ...previous, [record.id]: { ...previous[record.id], statusProgress: item.value } }))}
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="mobile-card-actions">
-                      <button className="mini-soft" onClick={() => setEditingId(null)}>取消</button>
-                      <button className="mini-primary" onClick={() => saveRecord(record.id)}>保存</button>
-                    </div>
-                  </article>
-                );
-              }
               return (
                 <SwipeDelete key={record.id} label="记录" onDelete={() => void deleteRecord(record.id)}>
                   <article className="mobile-plan-card progress-item-card" onClick={() => startEdit(record)}>
@@ -462,21 +424,33 @@ export function Progress() {
               </article>
             ))}
 
-            {addingNew && (
-              <article ref={newCardRef} className="mobile-edit-card new-card">
-                <input className="mobile-event-input" value={newDraft.eventName} onChange={(e) => setNewDraft({ ...newDraft, eventName: e.target.value })} onKeyDown={(e) => { if (e.key === "Enter") saveNew(); if (e.key === "Escape") cancelNew(); }} placeholder="事件名" autoFocus />
-                <div className="mobile-time-grid">
-                  <AppTimePicker label="开始" value={newDraft.startHHMM} onChange={(value) => changeNewTime("start", value)} />
-                  <AppTimePicker label="结束" value={newDraft.endHHMM} dayOffset={newDraft.endNextDay ? 1 : 0} onDayOffsetChange={(offset) => setNewEndDay(offset === 1)} onChange={(value) => changeNewTime("end", value)} />
-                </div>
-                <div className="mobile-card-actions"><button className="mini-soft" onClick={cancelNew}>取消</button><button className="mini-primary" onClick={saveNew}>保存</button></div>
-              </article>
-            )}
-
             {!addingNew && mode === "view" && records.length > 0 && <button className="inline-add-card compact" onClick={() => setAddingNew(true)}><span>+</span></button>}
           </div>
         </section>
       </div>
+      {editingId && drafts[editingId] && (
+        <RecordEditorSheet title="编辑记录" onCancel={() => { setEditingId(null); setDrafts((previous) => { const next = { ...previous }; delete next[editingId]; return next; }); }} onSave={() => saveRecord(editingId)}>
+          <input className="mobile-event-input" value={drafts[editingId].eventName ?? ""} onChange={(e) => setDrafts((previous) => ({ ...previous, [editingId]: { ...previous[editingId], eventName: e.target.value } }))} placeholder="事件名" autoFocus />
+          <div className="mobile-time-grid">
+            <AppTimePicker label="开始时间" value={isoToHHMM(drafts[editingId].startUtc)} onChange={(value) => changeRecordTime(editingId, "start", value)} />
+            <AppTimePicker label="结束时间" value={isoToHHMM(drafts[editingId].endUtc)} dayOffset={drafts[editingId].endNextDay ? 1 : 0} onDayOffsetChange={(offset) => setRecordEndDay(editingId, offset === 1)} onChange={(value) => changeRecordTime(editingId, "end", value)} />
+          </div>
+          <div className="mobile-status-editor" role="group" aria-label="状态">
+            {[{ label: "差", value: 30, tone: "poor" }, { label: "中", value: 60, tone: "medium" }, { label: "好", value: 90, tone: "good" }].map((item) => (
+              <button key={item.label} className={`status-edit-btn is-${item.tone}${statusDisplay(drafts[editingId].statusProgress).label === item.label ? " is-selected" : ""}`} onClick={() => setDrafts((previous) => ({ ...previous, [editingId]: { ...previous[editingId], statusProgress: item.value } }))}>{item.label}</button>
+            ))}
+          </div>
+        </RecordEditorSheet>
+      )}
+      {addingNew && (
+        <RecordEditorSheet title="补录记录" onCancel={cancelNew} onSave={() => void saveNew()} saveLabel="添加记录">
+          <input className="mobile-event-input" value={newDraft.eventName} onChange={(e) => setNewDraft({ ...newDraft, eventName: e.target.value })} onKeyDown={(e) => { if (e.key === "Enter") void saveNew(); }} placeholder="事件名" autoFocus />
+          <div className="mobile-time-grid">
+            <AppTimePicker label="开始时间" value={newDraft.startHHMM} onChange={(value) => changeNewTime("start", value)} />
+            <AppTimePicker label="结束时间" value={newDraft.endHHMM} dayOffset={newDraft.endNextDay ? 1 : 0} onDayOffsetChange={(offset) => setNewEndDay(offset === 1)} onChange={(value) => changeNewTime("end", value)} />
+          </div>
+        </RecordEditorSheet>
+      )}
     </section>
   );
 }

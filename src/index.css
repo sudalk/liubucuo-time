@@ -1477,3 +1477,42 @@ body { color: var(--v1-ink); font-family: -apple-system, BlinkMacSystemFont, "Pi
   .card-time-rail { padding-right: 8px; }
   .date-pill { min-height: 48px; }
 }
+
+/* Record editing belongs in a focused bottom sheet, never inside the list. */
+:root {
+  --v1-paper: oklch(98.2% 0.004 300);
+  --v1-surface-soft: oklch(96.4% 0.008 300);
+}
+.card-main::after { display: none; }
+.swipe-delete { background: var(--v1-surface); }
+.swipe-delete-action { display: grid; place-items: center; pointer-events: none; }
+.swipe-delete-content { transform: translateX(0); }
+.swipe-delete.is-open .swipe-delete-action { pointer-events: auto; }
+.swipe-delete.is-open .swipe-delete-content { transform: translateX(-86px); }
+
+.record-editor-scrim {
+  position: fixed; inset: 0; z-index: 180; display: grid; align-items: end;
+  background: color-mix(in oklch, var(--v1-ink) 22%, transparent);
+}
+.record-editor-sheet {
+  width: min(560px, 100%); max-height: min(82dvh, 720px); overflow-y: auto;
+  margin: 0 auto; padding: 10px 20px calc(18px + var(--safe-bottom));
+  border-radius: 26px 26px 0 0; background: var(--v1-surface);
+  box-shadow: 0 -18px 46px color-mix(in oklch, var(--v1-ink) 16%, transparent);
+}
+.record-editor-handle { display: block; width: 34px; height: 4px; margin: 0 auto 13px; border-radius: 999px; background: var(--v1-line); }
+.record-editor-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.record-editor-head span { display: block; margin-bottom: 2px; color: var(--v1-muted); font-size: 12px; font-weight: 620; }
+.record-editor-head h2 { margin: 0; color: var(--v1-ink); font-size: 21px; font-weight: 760; letter-spacing: -.03em; }
+.record-editor-close { display: grid; width: 36px; height: 36px; place-items: center; border: 0; border-radius: 50%; background: var(--v1-surface-soft); color: var(--v1-muted); font: inherit; font-size: 25px; font-weight: 350; cursor: pointer; }
+.record-editor-body { display: grid; gap: 14px; }
+.record-editor-actions { display: grid; grid-template-columns: 1fr 1.35fr; gap: 10px; margin-top: 22px; }
+.record-editor-actions button { min-height: 48px; border: 0; border-radius: 13px; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
+.record-editor-cancel { background: var(--v1-surface-soft); color: var(--v1-ink); }
+.record-editor-save { background: var(--v1-accent-deep); color: var(--v1-surface); }
+.record-editor-sheet .time-sheet-scrim { z-index: 210; }
+
+@media (min-width: 701px) {
+  .record-editor-scrim { align-items: center; padding: 28px; }
+  .record-editor-sheet { border-radius: 24px; padding-bottom: 20px; }
+}
