@@ -216,7 +216,6 @@ export function Analysis() {
     }
   };
 
-  const offsetLabel = offset === 0 ? "本" : offset > 0 ? `+${offset}` : `${offset}`;
   const isCurrent = offset === 0;
   const displayKeywords: string[] = saved?.keywords ? JSON.parse(saved.keywords) : [];
   const displaySummary = aiText || editSummary;
@@ -244,7 +243,7 @@ export function Analysis() {
         </div>
 
         <div style={{ textAlign: "center", color: "var(--muted)", fontSize: 13, marginBottom: 18 }}>
-          {range.label} {offsetLabel !== "本" && `（${offsetLabel}）`}
+          {range.label}
         </div>
 
         {loading ? (

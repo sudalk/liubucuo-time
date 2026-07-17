@@ -1518,6 +1518,8 @@ body { color: var(--v1-ink); font-family: -apple-system, BlinkMacSystemFont, "Pi
 
 /* Shared five-day strip and a deliberate calendar escape hatch for long jumps. */
 .date-navigator { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: stretch; margin: 0 0 22px; }
+.date-strip-wrap { min-width: 0; display: grid; gap: 6px; }
+.date-strip-month { padding-left: 4px; color: var(--v1-muted); font-size: 13px; font-weight: 680; letter-spacing: .01em; }
 .date-navigator .date-strip { margin: 0; }
 .date-calendar-button { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 56px; border: 1px solid var(--v1-line); border-radius: 15px; background: var(--v1-surface); color: var(--v1-muted); font: inherit; font-size: 10px; font-weight: 650; cursor: pointer; }
 .date-calendar-button svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
@@ -1540,3 +1542,15 @@ body { color: var(--v1-ink); font-family: -apple-system, BlinkMacSystemFont, "Pi
   .date-calendar-scrim { align-items: center; padding: 28px; }
   .date-calendar-sheet { border-radius: 24px; padding-bottom: 20px; }
 }
+
+/* Analysis uses one compact type scale: context, section title, then content. */
+.analysis-screen .module-heading { align-items: flex-start; gap: 14px; }
+.analysis-screen .module-kicker { color: var(--v1-muted); font-size: 11px; font-weight: 650; letter-spacing: .02em; }
+.analysis-screen .module-heading h2 { margin-top: 4px; color: var(--v1-ink); font-size: 20px; font-weight: 740; line-height: 1.2; letter-spacing: -.02em; }
+.analysis-screen .module-stat { padding-top: 4px; color: var(--v1-muted); font-size: 11px; font-weight: 600; }
+.analysis-screen .analysis-overview > .subtle, .analysis-screen .summary-panel > .subtle { margin: 12px 0 0; color: var(--v1-muted); font-size: 14px; line-height: 1.55; }
+.analysis-screen .plain-textarea { min-height: 128px; border-color: var(--v1-line); border-radius: 12px; background: color-mix(in oklch, var(--v1-surface) 94%, var(--v1-paper)); color: var(--v1-ink); font-size: 14px; line-height: 1.65; }
+.analysis-screen .analysis-toolbar { gap: 10px; margin-bottom: 14px; }
+.analysis-screen .analysis-period-switch { padding: 3px; border-radius: 14px; background: var(--v1-surface-soft); }
+.analysis-screen .analysis-period-switch button { min-height: 40px; border-radius: 10px; font-size: 14px; font-weight: 680; }
+.analysis-screen .analysis-actions .btn { min-height: 40px; border-radius: 11px; font-size: 13px; font-weight: 650; box-shadow: none; }

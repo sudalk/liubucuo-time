@@ -44,16 +44,19 @@ export function DateNavigator({ value, onChange }: DateNavigatorProps) {
 
   return (
     <div className="date-navigator">
-      <div className="date-strip" aria-label="选择日期">
-        {dates.map((date) => {
-          const key = dateKey(date);
-          return (
-            <button key={key} className={`date-pill${key === value ? " is-active" : ""}`} onClick={() => onChange(key)}>
-              <b>{date.getDate()}</b>
-              <small>{dateWord(key)}</small>
-            </button>
-          );
-        })}
+      <div className="date-strip-wrap">
+        <div className="date-strip-month">{fromKey(value).getFullYear()} 年 {fromKey(value).getMonth() + 1} 月</div>
+        <div className="date-strip" aria-label="选择日期">
+          {dates.map((date) => {
+            const key = dateKey(date);
+            return (
+              <button key={key} className={`date-pill${key === value ? " is-active" : ""}`} onClick={() => onChange(key)}>
+                <b>{date.getDate()}</b>
+                <small>{dateWord(key)}</small>
+              </button>
+            );
+          })}
+        </div>
       </div>
       <button type="button" className="date-calendar-button" onClick={openCalendar} aria-label="打开日历">
         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3" /><path d="M8 3v4M16 3v4M3.5 10h17M8 14h3M8 17h6" /></svg>
