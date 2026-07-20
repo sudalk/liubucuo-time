@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type UIEvent } from "react";
+import { createPortal } from "react-dom";
 import { useToastStore } from "../stores/toast";
 import { confirmAction } from "../stores/confirm";
 import { api, type PlanItem, type TimeRecord } from "../api/client";
@@ -7,12 +8,13 @@ import { AppTimePicker } from "../components/AppTimePicker";
 import { SwipeDelete } from "../components/SwipeDelete";
 import { RecordEditorSheet } from "../components/RecordEditorSheet";
 import { DateNavigator } from "../components/DateNavigator";
+import { BackToTopButton } from "../components/BackToTopButton";
 
 const FLEXIBLE_EVENTS = new Set(["上厕所", "如厕"]);
 
-type Mode = "view" | "compare";
-
 type CompareTone = "green" | "yellow" | "red";
+type StatusFilter = "all" | "poor" | "medium" | "good";
+const HISTORY_PAGE_SIZE = 40;
 
 interface CompareChip {
   label: string;
@@ -20,8 +22,7 @@ interface CompareChip {
 }
 
 interface CompareRow {
-  kind: "actual" | "missing";
-  record?: TimeRecord;
+  record: TimeRecord;
   plan?: PlanItem;
   tone: CompareTone;
   chips: CompareChip[];
@@ -30,11 +31,6 @@ interface CompareRow {
 function timeToMinutes(hhmm: string): number {
   const [h, m] = hhmm.split(":").map(Number);
   return h * 60 + m;
-}
-
-function recordMinutes(r: TimeRecord): number {
-  if (!r.endUtc) return 0;
-  return Math.max(1, Math.round(recordSeconds(r) / 60));
 }
 
 function recordSeconds(r: TimeRecord): number {
@@ -51,26 +47,11 @@ function durationToSecondsText(seconds: number | null | undefined): string {
   return `${h}小时${m}分钟${s}秒`;
 }
 
-function durationToHours(m: number | null | undefined): string {
-  const total = Math.max(1, Math.min(1439, m ?? 60));
-  const h = total / 60;
-  return `${h % 1 === 0 ? h.toFixed(0) : h.toFixed(1)} 小时`;
-}
-
 function statusDisplay(value: number | null | undefined): { label: string; tone: "poor" | "medium" | "good" } {
   const status = value ?? 60;
   if (status <= 45) return { label: "差", tone: "poor" };
   if (status <= 75) return { label: "中", tone: "medium" };
   return { label: "好", tone: "good" };
-}
-
-function diffLabel(diff: number, type: "start" | "duration"): CompareChip {
-  if (diff === 0) return { label: type === "start" ? "准时" : "刚好", tone: "green" };
-  const abs = Math.abs(diff);
-  if (type === "start") {
-    return diff < 0 ? { label: `早 ${abs} 分钟`, tone: "green" } : { label: `晚 ${abs} 分钟`, tone: "red" };
-  }
-  return diff < 0 ? { label: `少 ${abs} 分钟`, tone: "green" } : { label: `多 ${abs} 分钟`, tone: "red" };
 }
 
 function rowTone(chips: CompareChip[]): CompareTone {
@@ -105,32 +86,16 @@ function computeCompareRows(records: TimeRecord[], plans: PlanItem[]): CompareRo
     if (flexible) {
       chips.push({ label: "灵活事件", tone: "yellow" });
     } else if (best) {
-      chips.push({ label: "事件匹配", tone: "green" });
-      const bestStart = best.plannedStartLocal ? timeToMinutes(best.plannedStartLocal.slice(11, 16)) : actualStart;
-      const bestMins = best.estimatedMinutes ?? recordMinutes(record);
-      chips.push(diffLabel(actualStart - bestStart, "start"));
-      chips.push(diffLabel(recordMinutes(record) - bestMins, "duration"));
+      chips.push({ label: "计划内", tone: "green" });
     } else {
       chips.push({ label: "计划外", tone: "yellow" });
     }
 
-    rows.push({ kind: "actual", record, plan: best ?? undefined, tone: rowTone(chips), chips });
+    rows.push({ record, plan: best ?? undefined, tone: rowTone(chips), chips });
   });
 
-  plans
-    .filter((p) => !used.has(p.id))
-    .forEach((plan) => {
-      const chips: CompareChip[] = [
-        { label: "计划有", tone: "red" },
-        { label: "实际未出现", tone: "red" }
-      ];
-      rows.push({ kind: "missing", plan, tone: "red", chips });
-    });
-
   return rows.sort((a, b) => {
-    const ta = a.kind === "actual" && a.record ? a.record.startLocal : a.plan?.plannedStartLocal ?? "";
-    const tb = b.kind === "actual" && b.record ? b.record.startLocal : b.plan?.plannedStartLocal ?? "";
-    return ta.localeCompare(tb);
+    return a.record.startLocal.localeCompare(b.record.startLocal);
   });
 }
 
@@ -165,8 +130,19 @@ function endTimeLabel(record: TimeRecord): string {
   return record.endLocal && record.startLocal && record.endLocal.slice(0, 10) > record.startLocal.slice(0, 10) ? `次日 ${end}` : end;
 }
 
+function dateLabel(local: string | null | undefined): string {
+  if (!local) return "";
+  const date = local.slice(0, 10);
+  const d = new Date(`${date}T12:00:00+08:00`);
+  return d.toLocaleDateString("zh-CN", { month: "numeric", day: "numeric", weekday: "short" });
+}
+
 function sortRecords(items: TimeRecord[]): TimeRecord[] {
   return [...items].sort((a, b) => (a.startLocal ?? "").localeCompare(b.startLocal ?? ""));
+}
+
+function sortRecordsDesc(items: TimeRecord[]): TimeRecord[] {
+  return [...items].sort((a, b) => (b.startLocal ?? "").localeCompare(a.startLocal ?? ""));
 }
 
 function localIsoFor(date: string, utc: string, nextDay = false): string {
@@ -186,11 +162,18 @@ export function Progress() {
   const [records, setRecords] = useState<TimeRecord[]>([]);
   const [plans, setPlans] = useState<PlanItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [mode, setMode] = useState<Mode>("view");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, RecordDraft>>({});
   const [addingNew, setAddingNew] = useState(false);
-  const [newDraft, setNewDraft] = useState<{ eventName: string; startHHMM: string; endHHMM: string; endNextDay: boolean }>({ eventName: "", startHHMM: "09:00", endHHMM: "10:00", endNextDay: false });
+  const [newDraft, setNewDraft] = useState<{ eventName: string; startHHMM: string; endHHMM: string; endNextDay: boolean; note: string }>({ eventName: "", startHHMM: "09:00", endHHMM: "10:00", endNextDay: false, note: "" });
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [historyRecords, setHistoryRecords] = useState<TimeRecord[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyLoadingMore, setHistoryLoadingMore] = useState(false);
+  const [historyOffset, setHistoryOffset] = useState(0);
+  const [historyHasMore, setHistoryHasMore] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -210,13 +193,73 @@ export function Progress() {
 
   useEffect(() => {
     void load();
-    setMode("view");
     setEditingId(null);
     setAddingNew(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 
-  const compareRows = mode === "compare" ? computeCompareRows(records, plans) : [];
+  const compareRows = computeCompareRows(records, plans);
+  const renderRecordRow = (row: CompareRow) => (
+    <SwipeDelete key={row.record.id} label="记录" onDelete={() => void deleteRecord(row.record.id)}>
+      <article className={`mobile-plan-card progress-item-card is-${row.tone}`} onClick={() => startEdit(row.record)}>
+        <div className="card-time-rail"><strong>{hhmmFromLocal(row.record.startLocal)}</strong><span>{endTimeLabel(row.record)}</span></div>
+        <div className="card-main">
+          <div className="compare-title-row">
+            <b>{row.record.eventName}</b>
+            <em className={`plan-scope-badge ${row.plan ? "is-inside" : "is-outside"}`}>{row.plan ? "计划内" : "计划外"}</em>
+          </div>
+          <div className="card-meta">
+            <small>{row.record.endUtc ? durationToSecondsText(recordSeconds(row.record)) : "进行中"}</small>
+            <span className={`record-status is-${statusDisplay(row.record.statusProgress).tone}`}>{statusDisplay(row.record.statusProgress).label}</span>
+          </div>
+          {row.record.note && <small className="card-note">{row.record.note}</small>}
+        </div>
+      </article>
+    </SwipeDelete>
+  );
+
+  const loadHistoryPage = useCallback(async (offset: number, append: boolean) => {
+    if (!searchOpen) return;
+    if (append) {
+      setHistoryLoadingMore(true);
+    } else {
+      setHistoryLoading(true);
+    }
+    try {
+      const params = new URLSearchParams({
+        limit: String(HISTORY_PAGE_SIZE),
+        offset: String(offset),
+        status: statusFilter
+      });
+      if (query.trim()) params.set("q", query.trim());
+      const { records, nextOffset, hasMore } = await api.get<{ records: TimeRecord[]; nextOffset: number; hasMore: boolean }>(
+        `/api/records/search?${params.toString()}`
+      );
+      setHistoryRecords((current) => append ? sortRecordsDesc([...current, ...records]) : sortRecordsDesc(records));
+      setHistoryOffset(nextOffset);
+      setHistoryHasMore(hasMore);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "加载历史进展失败");
+    } finally {
+      setHistoryLoading(false);
+      setHistoryLoadingMore(false);
+    }
+  }, [query, searchOpen, showToast, statusFilter]);
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    const timer = window.setTimeout(() => {
+      void loadHistoryPage(0, false);
+    }, 120);
+    return () => window.clearTimeout(timer);
+  }, [loadHistoryPage, query, searchOpen, statusFilter]);
+
+  const handleSearchScroll = (event: UIEvent<HTMLDivElement>) => {
+    const el = event.currentTarget;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 180 && historyHasMore && !historyLoading && !historyLoadingMore) {
+      void loadHistoryPage(historyOffset, true);
+    }
+  };
 
   const changeRecordTime = (id: string, part: "start" | "end", value: string) => {
     setDrafts((previous) => {
@@ -331,6 +374,13 @@ export function Progress() {
     setEditingId(record.id);
   };
 
+  const openHistoryRecord = (record: TimeRecord) => {
+    setSearchOpen(false);
+    const recordDate = record.startLocal.slice(0, 10);
+    setDate(recordDate);
+    showToast(`已跳到 ${dateLabel(record.startLocal)}`);
+  };
+
   const saveNew = async () => {
     const name = newDraft.eventName.trim();
     if (!name) { setAddingNew(false); return; }
@@ -343,9 +393,9 @@ export function Progress() {
         return;
       }
       // 补录直接写入已完成记录，绝不触碰主页正在运行的活动计时器。
-      await api.post("/api/records", { eventName: name, startUtc: startIso, endUtc: endIso, statusProgress: 60 });
+      await api.post("/api/records", { eventName: name, startUtc: startIso, endUtc: endIso, statusProgress: 60, note: newDraft.note.trim() || null });
       setAddingNew(false);
-      setNewDraft({ eventName: "", startHHMM: "09:00", endHHMM: "10:00", endNextDay: false });
+      setNewDraft({ eventName: "", startHHMM: "09:00", endHHMM: "10:00", endNextDay: false, note: "" });
       await load();
       showToast("已添加记录");
     } catch (err) {
@@ -355,18 +405,20 @@ export function Progress() {
 
   const cancelNew = () => {
     setAddingNew(false);
-    setNewDraft({ eventName: "", startHHMM: "09:00", endHHMM: "10:00", endNextDay: false });
+    setNewDraft({ eventName: "", startHHMM: "09:00", endHHMM: "10:00", endNextDay: false, note: "" });
   };
 
   return (
     <section className="sketch-screen progress-screen mobile-card-screen" aria-label="进展页">
       <div className="sketch-content">
-        <DateNavigator value={date} onChange={setDate} />
+        <div className="page-sticky-control">
+          <DateNavigator value={date} onChange={setDate} />
+        </div>
 
-        <div className="toolbar slim-toolbar">
-          <span className="subtle">按开始时间</span>
-          <button className={`btn ${mode === "compare" ? "btn-primary" : "btn-soft"}`} onClick={() => { setMode((current) => current === "compare" ? "view" : "compare"); setEditingId(null); }} disabled={plans.length === 0 && records.length === 0}>
-            {mode === "compare" ? "退出对比" : "对比"}
+        <div className="progress-search-entry">
+          <button type="button" className="search-field search-field-button" onClick={() => setSearchOpen(true)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20 20-4.8-4.8M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4Z" /></svg>
+            <span>查找事件</span>
           </button>
         </div>
 
@@ -378,52 +430,79 @@ export function Progress() {
 
           <div className="plan-card-list">
             {loading && <div className="embedded-empty">加载中…</div>}
-            {!loading && records.length === 0 && mode !== "compare" && !addingNew && (
+            {!loading && records.length === 0 && !addingNew && (
               <button className="inline-add-card" onClick={() => setAddingNew(true)}><span>+</span>添加第一条记录</button>
             )}
 
-            {mode === "view" && records.map((record) => {
-              const status = statusDisplay(record.statusProgress);
-              return (
-                <SwipeDelete key={record.id} label="记录" onDelete={() => void deleteRecord(record.id)}>
-                  <article className="mobile-plan-card progress-item-card" onClick={() => startEdit(record)}>
-                    <div className="card-time-rail"><strong>{hhmmFromLocal(record.startLocal)}</strong><span>{endTimeLabel(record)}</span></div>
-                    <div className="card-main">
-                      <b>{record.eventName}</b>
-                      <div className="card-meta"><small>{record.endUtc ? durationToSecondsText(recordSeconds(record)) : "进行中"}</small><span className={`record-status is-${status.tone}`}>{status.label}</span></div>
-                    </div>
-                  </article>
-                </SwipeDelete>
-              );
-            })}
+            {!loading && compareRows.length === 0 && records.length > 0 && (
+              <div className="embedded-empty">没有匹配的记录。</div>
+            )}
 
-            {mode === "compare" && compareRows.map((row, idx) => row.kind === "missing" ? (
-              <article key={`m-${idx}`} className={`compare-card is-${row.tone}`}>
-                <div className="compare-time"><strong>{row.plan?.plannedStartLocal?.slice(11, 16) ?? "待定"}</strong><span>计划 {durationToHours(row.plan?.estimatedMinutes)}</span></div>
-                <div className="compare-body">
-                  <div className="compare-title-row"><b>{row.plan?.eventName}</b><em>计划遗漏</em></div>
-                  <p>这条计划到时间了，但进展里没有对应记录。</p>
-                  <div className="compare-chips">{row.chips.map((chip) => <span key={chip.label} className={`compare-chip is-${chip.tone}`}>{chip.label}</span>)}</div>
-                </div>
-              </article>
-            ) : (
-              <article key={row.record!.id} className={`compare-card is-${row.tone}`}>
-                <div className="compare-time"><strong>{hhmmFromLocal(row.record!.startLocal)}</strong><span>{hhmmFromLocal(row.record!.endLocal)}</span></div>
-                <div className="compare-body">
-                  <div className="compare-title-row"><b>{row.record!.eventName}</b><em>{row.plan ? "已匹配计划" : "计划外"}</em></div>
-                  <p>
-                    实际 {row.record!.endUtc ? durationToSecondsText(recordSeconds(row.record!)) : "进行中"}
-                    {row.plan ? ` · 计划 ${row.plan.plannedStartLocal?.slice(11, 16) ?? "待定"} / ${durationToHours(row.plan.estimatedMinutes)}` : " · 今天计划里没有它"}
-                  </p>
-                  <div className="compare-chips">{row.chips.map((chip) => <span key={chip.label} className={`compare-chip is-${chip.tone}`}>{chip.label}</span>)}</div>
-                </div>
-              </article>
-            ))}
+            {!loading && compareRows.map(renderRecordRow)}
 
-            {!addingNew && mode === "view" && records.length > 0 && <button className="inline-add-card compact" onClick={() => setAddingNew(true)}><span>+</span></button>}
+            {!addingNew && records.length > 0 && <button className="inline-add-card compact" onClick={() => setAddingNew(true)}><span>+</span></button>}
           </div>
         </section>
       </div>
+      {searchOpen && createPortal((
+        <div className="progress-search-overlay" role="dialog" aria-modal="true" aria-label="查找事件">
+          <div className="progress-search-page">
+            <header className="progress-search-head">
+              <label className="search-field">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20 20-4.8-4.8M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4Z" /></svg>
+                <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索" />
+              </label>
+              <button type="button" onClick={() => setSearchOpen(false)}>取消</button>
+            </header>
+            <div className="filter-chips progress-search-filters" role="group" aria-label="状态筛选">
+              {[
+                { key: "all", label: "全部" },
+                { key: "poor", label: "差" },
+                { key: "medium", label: "中" },
+                { key: "good", label: "好" }
+              ].map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  className={statusFilter === item.key ? "is-active" : ""}
+                  onClick={() => setStatusFilter(item.key as StatusFilter)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            <section className="progress-search-results">
+              <div className="embedded-head">
+                <div><span className="module-kicker">历史进展</span><h2>搜索结果</h2></div>
+                <span className="count-pill">{historyRecords.length}{historyHasMore ? "+" : ""} 条</span>
+              </div>
+              <div className="history-record-list" onScroll={handleSearchScroll}>
+                {historyLoading ? (
+                  <div className="embedded-empty">加载中…</div>
+                ) : historyRecords.length === 0 ? (
+                  <div className="embedded-empty">没有匹配的历史进展。</div>
+                ) : historyRecords.map((record) => (
+                  <button key={`history-${record.id}`} type="button" className="history-record-row" onClick={() => openHistoryRecord(record)}>
+                    <span className="history-record-date">{dateLabel(record.startLocal)}</span>
+                    <span className="history-record-time">
+                      <strong>{hhmmFromLocal(record.startLocal)}</strong>
+                      <small>{endTimeLabel(record)}</small>
+                    </span>
+                    <span className="history-record-main">
+                      <b>{record.eventName}</b>
+                      <small>{record.endUtc ? durationToSecondsText(recordSeconds(record)) : "进行中"}{record.note ? ` · ${record.note}` : ""}</small>
+                    </span>
+                    <span className={`record-status is-${statusDisplay(record.statusProgress).tone}`}>{statusDisplay(record.statusProgress).label}</span>
+                  </button>
+                ))}
+                {!historyLoading && historyLoadingMore && <div className="history-load-more">加载更多…</div>}
+                {!historyLoading && !historyLoadingMore && historyHasMore && <div className="history-load-more">继续下滑加载</div>}
+                {!historyLoading && !historyHasMore && historyRecords.length > 0 && <div className="history-load-more">已到底</div>}
+              </div>
+            </section>
+          </div>
+        </div>
+      ), document.body)}
       {editingId && drafts[editingId] && (
         <RecordEditorSheet title="编辑记录" onCancel={() => { setEditingId(null); setDrafts((previous) => { const next = { ...previous }; delete next[editingId]; return next; }); }} onSave={() => saveRecord(editingId)}>
           <input className="mobile-event-input" value={drafts[editingId].eventName ?? ""} onChange={(e) => setDrafts((previous) => ({ ...previous, [editingId]: { ...previous[editingId], eventName: e.target.value } }))} placeholder="事件名" autoFocus />
@@ -436,6 +515,7 @@ export function Progress() {
               <button key={item.label} className={`status-edit-btn is-${item.tone}${statusDisplay(drafts[editingId].statusProgress).label === item.label ? " is-selected" : ""}`} onClick={() => setDrafts((previous) => ({ ...previous, [editingId]: { ...previous[editingId], statusProgress: item.value } }))}>{item.label}</button>
             ))}
           </div>
+          <textarea className="mobile-note-input" value={drafts[editingId].note ?? ""} onChange={(e) => setDrafts((previous) => ({ ...previous, [editingId]: { ...previous[editingId], note: e.target.value } }))} placeholder="备注，可选" rows={2} />
         </RecordEditorSheet>
       )}
       {addingNew && (
@@ -445,8 +525,10 @@ export function Progress() {
             <AppTimePicker label="开始时间" value={newDraft.startHHMM} onChange={(value) => changeNewTime("start", value)} />
             <AppTimePicker label="结束时间" value={newDraft.endHHMM} dayOffset={newDraft.endNextDay ? 1 : 0} onDayOffsetChange={(offset) => setNewEndDay(offset === 1)} onChange={(value) => changeNewTime("end", value)} />
           </div>
+          <textarea className="mobile-note-input" value={newDraft.note} onChange={(e) => setNewDraft({ ...newDraft, note: e.target.value })} placeholder="备注，可选" rows={2} />
         </RecordEditorSheet>
       )}
+      <BackToTopButton />
     </section>
   );
 }

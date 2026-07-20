@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type UIEvent } from "react";
 import { Clock } from "../components/Clock";
 import { BubbleCloud } from "../components/BubbleCloud";
 import { useTimerStore } from "../stores/timer";
@@ -6,7 +6,7 @@ import { useToastStore } from "../stores/toast";
 import { useRouteStore } from "../stores/route";
 import { useAuthStore } from "../stores/auth";
 import { api, type EventItem } from "../api/client";
-import { dateLabel } from "../lib/time";
+import { dateKey, dateLabel } from "../lib/time";
 
 // 状态三档：差 / 中 / 好，对应 statusProgress 30 / 60 / 90
 const STATUS_LEVELS = [
@@ -18,6 +18,7 @@ const STATUS_LEVELS = [
 export function Home() {
   const navigate = useRouteStore((s) => s.navigate);
   const user = useAuthStore((s) => s.user);
+  const [pageScrolled, setPageScrolled] = useState(false);
   const {
     activeTimer,
     selectedEvent,
@@ -40,11 +41,34 @@ export function Home() {
 
   useEffect(() => {
     void fetchActive();
-    void api
-      .get<{ events: EventItem[] }>("/api/events")
-      .then(({ events }) => setEvents(events))
+    void Promise.all([
+      api.get<{ events: EventItem[] }>("/api/events"),
+      api.get<{ events: Array<Pick<EventItem, "name" | "normalizedName">> }>(`/api/events/yesterday?date=${dateKey()}`).catch(() => ({ events: [] }))
+    ])
+      .then(([all, yesterday]) => {
+        const libraryByName = new Map(all.events.map((event) => [event.normalizedName, event]));
+        const merged = new Map<string, EventItem>();
+        yesterday.events.forEach((event) => {
+          merged.set(event.normalizedName, libraryByName.get(event.normalizedName) ?? {
+            id: `history:${event.normalizedName}`,
+            name: event.name,
+            normalizedName: event.normalizedName,
+            firstPlanAt: null,
+            lastPlanAt: null,
+            planCount: 0
+          });
+        });
+        all.events.forEach((event) => {
+          if (!merged.has(event.normalizedName)) merged.set(event.normalizedName, event);
+        });
+        setEvents(Array.from(merged.values()));
+      })
       .catch((err) => showToast(err instanceof Error ? err.message : "加载事件失败"));
   }, [fetchActive, showToast]);
+
+  const handlePageScroll = (event: UIEvent<HTMLElement>) => {
+    setPageScrolled(event.currentTarget.scrollTop > 1);
+  };
 
   useEffect(() => {
     let objectUrl: string | null = null;
@@ -107,6 +131,10 @@ export function Home() {
       showToast("正在记录的事件不能删除");
       return;
     }
+    if (event.id.startsWith("history:")) {
+      showToast("这是昨日记录里的事件，不能从事件库删除");
+      return;
+    }
     try {
       await api.delete(`/api/events/${event.id}`);
       setEvents((current) => current.filter((item) => item.id !== event.id));
@@ -127,13 +155,18 @@ export function Home() {
   );
 
   return (
-    <section className="sketch-screen home-screen" aria-label="主页记录">
+    <section className={`sketch-screen home-screen${pageScrolled ? " is-page-scrolled" : ""}`} aria-label="主页记录" onScroll={handlePageScroll}>
       <header className="home-sticky-bar">
         <button className="home-profile-button" onClick={() => navigate("profile")} aria-label="编辑个人信息">
           <span className="home-avatar">{avatarUrl ? <img src={avatarUrl} alt="" /> : avatarInitial}</span>
           <span className="home-date">{dateLabel()}</span>
         </button>
-        <button className="home-my-button" onClick={() => navigate("settings")} aria-label="打开我的">我的</button>
+        <button className="home-my-button" onClick={() => navigate("settings")} aria-label="打开我的">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="8" r="3.5" />
+            <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
+          </svg>
+        </button>
       </header>
 
       <div className="sketch-content">

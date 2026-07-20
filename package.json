@@ -26,6 +26,7 @@
     "@ai-sdk/openai": "^1.3.24",
     "@capacitor/android": "7",
     "@capacitor/core": "7",
+    "@capacitor/keyboard": "7",
     "@capacitor/preferences": "7",
     "ai": "^4.0.0",
     "clsx": "^2.1.1",

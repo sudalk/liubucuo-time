@@ -6,6 +6,11 @@ const config: CapacitorConfig = {
   webDir: "dist/client",
   android: {
     backgroundColor: "#f7f8fc"
+  },
+  plugins: {
+    Keyboard: {
+      resizeOnFullScreen: true
+    }
   }
 };
 

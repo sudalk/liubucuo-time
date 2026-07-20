@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { BottomNav } from "./Navigation";
 import { type Route, useRouteStore } from "../stores/route";
 
@@ -10,6 +10,7 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const route = useRouteStore((s) => s.route);
   const navigate = useRouteStore((s) => s.navigate);
+  const [pageScrolled, setPageScrolled] = useState(false);
   const isHome = route === "home";
   const pageTitle: Record<Exclude<Route, "home" | "login">, string> = {
     plan: "计划",
@@ -22,16 +23,34 @@ export function Layout({ children }: LayoutProps) {
   };
 
   useEffect(() => {
-    document.querySelector<HTMLElement>(".sketch-screen")?.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+    const screen = document.querySelector<HTMLElement>(".sketch-screen");
+    screen?.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+    setPageScrolled(false);
   }, [route]);
 
+  useEffect(() => {
+    if (isHome) return;
+    let cleanup: (() => void) | undefined;
+    const frame = window.requestAnimationFrame(() => {
+      const screen = document.querySelector<HTMLElement>(".sketch-screen");
+      if (!screen) return;
+      const update = () => setPageScrolled(screen.scrollTop > 1);
+      update();
+      screen.addEventListener("scroll", update, { passive: true });
+      cleanup = () => screen.removeEventListener("scroll", update);
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      cleanup?.();
+    };
+  }, [isHome, route]);
+
   return (
-    <div className={`app-shell${isHome ? "" : " has-page-bar"}`}>
+    <div className={`app-shell${isHome ? "" : " has-page-bar"}${pageScrolled ? " is-page-scrolled" : ""}`}>
       {!isHome && (
         <header className="app-page-bar">
           <button className="app-home-button" onClick={() => navigate("home")} aria-label="返回主页">
             <span aria-hidden="true">‹</span>
-            <b>返回</b>
           </button>
           <strong>{pageTitle[route as Exclude<Route, "home" | "login">]}</strong>
           <span className="app-page-bar-spacer" aria-hidden="true" />

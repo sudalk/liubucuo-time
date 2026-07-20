@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import type { HonoEnv } from "../types";
-import { and, eq, gte, lt, asc } from "drizzle-orm";
+import { and, eq, gte, lt, asc, desc } from "drizzle-orm";
 import { getDb } from "../lib/db";
 import { activeTimers, timeRecords, users } from "../schema";
 import { newId, normalizeEventName, nowUtc, durationMinutes, dateKey, DEFAULT_TIME_ZONE, toLocalIso, zonedDateTimeToUtc } from "../lib/utils";
@@ -146,6 +146,43 @@ records.get("/", async (c) => {
     startLocal: toLocalIso(row.startUtc, timezone),
     endLocal: row.endUtc ? toLocalIso(row.endUtc, timezone) : null
   })) });
+});
+
+// 历史进展搜索：只返回真实时间记录，不混入当天计划对比结果。
+records.get("/search", async (c) => {
+  const userId = c.get("userId")!;
+  const query = normalizeEventName(c.req.query("q") ?? "");
+  const rawLimit = Number(c.req.query("limit") ?? 300);
+  const rawOffset = Number(c.req.query("offset") ?? 0);
+  const status = c.req.query("status") ?? "all";
+  const limit = Math.max(1, Math.min(80, Number.isFinite(rawLimit) ? rawLimit : 40));
+  const offset = Math.max(0, Number.isFinite(rawOffset) ? rawOffset : 0);
+  const db = getDb(c.env);
+  const timezone = await userTimeZone(userId, db);
+  const rows = await db.query.timeRecords.findMany({
+    where: eq(timeRecords.userId, userId),
+    orderBy: [desc(timeRecords.startUtc)]
+  });
+  const byQuery = query
+    ? rows.filter((row) => (
+      row.normalizedName.includes(query) ||
+      normalizeEventName(row.eventName).includes(query) ||
+      normalizeEventName(row.note ?? "").includes(query)
+    ))
+    : rows;
+  const filtered = byQuery.filter((row) => {
+    const value = row.statusProgress ?? 60;
+    if (status === "poor") return value <= 45;
+    if (status === "medium") return value > 45 && value <= 75;
+    if (status === "good") return value > 75;
+    return true;
+  });
+  const page = filtered.slice(offset, offset + limit);
+  return c.json({ records: page.map((row) => ({
+    ...row,
+    startLocal: toLocalIso(row.startUtc, timezone),
+    endLocal: row.endUtc ? toLocalIso(row.endUtc, timezone) : null
+  })), nextOffset: offset + page.length, hasMore: offset + page.length < filtered.length });
 });
 
 // 补录一条已完成的历史记录。此接口不会读写 activeTimers，和主页开始/结束计时完全隔离。

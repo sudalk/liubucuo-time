@@ -15,6 +15,7 @@ function dateWord(value: string): string {
   if (value === today) return "今";
   if (value === dateKey(offsetDate(-1))) return "昨";
   if (value === dateKey(offsetDate(1))) return "明";
+  if (value === dateKey(offsetDate(2))) return "后";
   return "";
 }
 
@@ -45,7 +46,12 @@ export function DateNavigator({ value, onChange }: DateNavigatorProps) {
   return (
     <div className="date-navigator">
       <div className="date-strip-wrap">
-        <div className="date-strip-month">{fromKey(value).getFullYear()} 年 {fromKey(value).getMonth() + 1} 月</div>
+        <div className="date-strip-head">
+          <div className="date-strip-month">{fromKey(value).getFullYear()} 年 {fromKey(value).getMonth() + 1} 月</div>
+          <button type="button" className="date-calendar-button" onClick={openCalendar} aria-label="打开日历">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3" /><path d="M8 3v4M16 3v4M3.5 10h17M8 14h3M8 17h6" /></svg>
+          </button>
+        </div>
         <div className="date-strip" aria-label="选择日期">
           {dates.map((date) => {
             const key = dateKey(date);
@@ -58,10 +64,6 @@ export function DateNavigator({ value, onChange }: DateNavigatorProps) {
           })}
         </div>
       </div>
-      <button type="button" className="date-calendar-button" onClick={openCalendar} aria-label="打开日历">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3" /><path d="M8 3v4M16 3v4M3.5 10h17M8 14h3M8 17h6" /></svg>
-        <span>日历</span>
-      </button>
       {open && (
         <div className="date-calendar-scrim" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }}>
           <section className="date-calendar-sheet" role="dialog" aria-modal="true" aria-label="选择日期">

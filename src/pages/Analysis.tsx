@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useToastStore } from "../stores/toast";
 import { useAuthStore } from "../stores/auth";
-import { api, type TimeRecord } from "../api/client";
+import { api, type PlanItem, type TimeRecord } from "../api/client";
 import { dateKey, pad } from "../lib/time";
 import { eventColor } from "../lib/eventColor";
+import { BackToTopButton } from "../components/BackToTopButton";
 
 type Period = "daily" | "weekly" | "monthly";
 
@@ -68,6 +69,18 @@ function fetchRangeRecords(start: string, end: string): Promise<TimeRecord[]> {
   );
 }
 
+function fetchRangePlans(start: string, end: string): Promise<PlanItem[]> {
+  const days: string[] = [];
+  const d = new Date(start);
+  while (d.toISOString().slice(0, 10) <= end) {
+    days.push(d.toISOString().slice(0, 10));
+    d.setDate(d.getDate() + 1);
+  }
+  return Promise.all(days.map((day) => api.get<{ plans: PlanItem[] }>(`/api/plans?date=${day}`))).then(
+    (all) => all.flatMap((r) => r.plans)
+  );
+}
+
 function durationText(m: number): string {
   if (m < 60) return `${m}分`;
   const h = Math.floor(m / 60);
@@ -81,21 +94,28 @@ export function Analysis() {
   const [period, setPeriod] = useState<Period>("daily");
   const [offset, setOffset] = useState(0);
   const [records, setRecords] = useState<TimeRecord[]>([]);
+  const [plans, setPlans] = useState<PlanItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [reflection, setReflection] = useState("");
   const [saved, setSaved] = useState<SavedSummary | null>(null);
   const [aiText, setAiText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [editSummary, setEditSummary] = useState("");
+  const [legendExpanded, setLegendExpanded] = useState(false);
 
   const range = getRange(period, offset);
 
   const load = async () => {
     setLoading(true);
     setAiText("");
+    setLegendExpanded(false);
     try {
-      const recs = await fetchRangeRecords(range.start, range.end);
+      const [recs, rangePlans] = await Promise.all([
+        fetchRangeRecords(range.start, range.end),
+        fetchRangePlans(range.start, range.end)
+      ]);
       setRecords(recs);
+      setPlans(rangePlans);
 
       if (period === "daily") {
         const { reflection } = await api.get<{ reflection: { content: string } | null }>(
@@ -138,6 +158,23 @@ export function Analysis() {
   }, [records]);
 
   const totalMinutes = byEvent.reduce((s, e) => s + e.minutes, 0);
+  const plannedByEvent = useMemo(() => {
+    const m = new Map<string, number>();
+    plans.forEach((plan) => {
+      const mins = plan.estimatedMinutes ?? 0;
+      m.set(plan.eventName, (m.get(plan.eventName) ?? 0) + mins);
+    });
+    return m;
+  }, [plans]);
+  const eventPlanRows = useMemo(() => {
+    return byEvent
+      .map(({ event, minutes }) => {
+        const planned = plannedByEvent.get(event) ?? 0;
+        return { event, actual: minutes, planned };
+      })
+      .sort((a, b) => b.actual - a.actual || b.planned - a.planned);
+  }, [byEvent, plannedByEvent]);
+  const visibleEventRows = legendExpanded ? eventPlanRows : eventPlanRows.slice(0, 5);
 
   const statusAvg = useMemo(() => {
     const weighted = records.filter((r) => r.statusProgress != null && r.durationMinutes);
@@ -219,31 +256,34 @@ export function Analysis() {
   const isCurrent = offset === 0;
   const displayKeywords: string[] = saved?.keywords ? JSON.parse(saved.keywords) : [];
   const displaySummary = aiText || editSummary;
-  const donutBackground = `conic-gradient(${byEvent.map((event, index) => {
-    const color = eventColor(event.event);
-    const start = (byEvent.slice(0, index).reduce((sum, item) => sum + item.minutes, 0) / totalMinutes) * 360;
-    const end = start + (event.minutes / totalMinutes) * 360;
-    const midpoint = start + (end - start) * 0.52;
-    return `color-mix(in oklch, ${color} 70%, var(--surface)) ${start}deg, ${color} ${midpoint}deg, color-mix(in oklch, ${color} 82%, var(--ink)) ${end}deg`;
-  }).join(", ")})`;
+  const donutBackground = totalMinutes > 0
+    ? `conic-gradient(${byEvent.map((event, index) => {
+        const color = eventColor(event.event);
+        const start = (byEvent.slice(0, index).reduce((sum, item) => sum + item.minutes, 0) / totalMinutes) * 360;
+        const end = start + (event.minutes / totalMinutes) * 360;
+        const midpoint = start + (end - start) * 0.52;
+        return `color-mix(in oklch, ${color} 70%, var(--surface)) ${start}deg, ${color} ${midpoint}deg, color-mix(in oklch, ${color} 82%, var(--ink)) ${end}deg`;
+      }).join(", ")})`
+    : "conic-gradient(color-mix(in oklch, var(--v1-line) 75%, transparent) 0deg 360deg)";
 
   return (
     <section className="sketch-screen analysis-screen" aria-label="分析页">
       <div className="sketch-content">
-        <div className="toolbar analysis-toolbar">
-          <div className="segmented analysis-period-switch">
-            <button className={period === "daily" ? "is-active" : ""} onClick={() => { setPeriod("daily"); setOffset(0); }}>日</button>
-            <button className={period === "weekly" ? "is-active" : ""} onClick={() => { setPeriod("weekly"); setOffset(0); }}>周</button>
-            <button className={period === "monthly" ? "is-active" : ""} onClick={() => { setPeriod("monthly"); setOffset(0); }}>月</button>
+        <div className="page-sticky-control analysis-sticky-control">
+          <div className="toolbar analysis-toolbar">
+            <div className="segmented analysis-period-switch">
+              <button className={period === "daily" ? "is-active" : ""} onClick={() => { setPeriod("daily"); setOffset(0); }}>日</button>
+              <button className={period === "weekly" ? "is-active" : ""} onClick={() => { setPeriod("weekly"); setOffset(0); }}>周</button>
+              <button className={period === "monthly" ? "is-active" : ""} onClick={() => { setPeriod("monthly"); setOffset(0); }}>月</button>
+            </div>
+            <div className="analysis-actions compact">
+              <button className="btn btn-soft" onClick={() => setOffset((n) => n - 1)}>‹ 上一{period === "daily" ? "日" : period === "weekly" ? "周" : "月"}</button>
+              <button className="btn btn-soft" onClick={() => setOffset((n) => n + 1)} disabled={isCurrent}>下一{period === "daily" ? "日" : period === "weekly" ? "周" : "月"} ›</button>
+            </div>
           </div>
-          <div className="analysis-actions compact">
-            <button className="btn btn-soft" onClick={() => setOffset((n) => n - 1)}>‹ 上一{period === "daily" ? "日" : period === "weekly" ? "周" : "月"}</button>
-            <button className="btn btn-soft" onClick={() => setOffset((n) => n + 1)} disabled={isCurrent}>下一{period === "daily" ? "日" : period === "weekly" ? "周" : "月"} ›</button>
+          <div className="analysis-range-label">
+            {range.label}
           </div>
-        </div>
-
-        <div style={{ textAlign: "center", color: "var(--muted)", fontSize: 13, marginBottom: 18 }}>
-          {range.label}
         </div>
 
         {loading ? (
@@ -259,7 +299,7 @@ export function Analysis() {
                   <span className="module-kicker">时间分布</span>
                   <h2>概况</h2>
                 </div>
-                {records.length > 0 && <span className="module-stat">{byEvent.length} 类事件</span>}
+                {records.length > 0 && <span className="module-stat">{eventPlanRows.length} 类事件</span>}
               </div>
               {records.length === 0 ? (
                 <p className="subtle">这一天还没有记录。</p>
@@ -271,14 +311,25 @@ export function Analysis() {
                       <small>已记录</small>
                     </div>
                   </div>
-                  <div className="legend">
-                    {byEvent.slice(0, 8).map((e) => (
-                      <div key={e.event} className="legend-row">
+                  <div className="legend analysis-event-list">
+                    <div className="analysis-event-head" aria-hidden="true">
+                      <span>事件</span>
+                      <span>计划</span>
+                      <span>实际</span>
+                    </div>
+                    {visibleEventRows.map((e) => (
+                      <div key={e.event} className="legend-row analysis-event-row analysis-plan-actual-row">
                         <i style={{ background: eventColor(e.event) }} />
                         <span>{e.event}</span>
-                        <span>{durationText(e.minutes)}</span>
+                        <span>{e.planned > 0 ? durationText(e.planned) : "无"}</span>
+                        <span>{e.actual > 0 ? durationText(e.actual) : "无"}</span>
                       </div>
                     ))}
+                    {eventPlanRows.length > 5 && (
+                      <button type="button" className="legend-expand-button" onClick={() => setLegendExpanded((value) => !value)}>
+                        {legendExpanded ? "收起" : `展开全部 ${eventPlanRows.length} 项`}
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -370,6 +421,7 @@ export function Analysis() {
           </>
         )}
       </div>
+      <BackToTopButton />
     </section>
   );
 }
